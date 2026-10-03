@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kirana Shop Invoice & Billing System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inconsolata:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                        },
+                        kirana: {
+                            red: '#dc2626',
+                            yellow: '#f59e0b',
+                            amber: '#d97706',
+                            slate: '#0f172a'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Inconsolata', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+       
+        /* Thermal receipt specific print CSS */
+        @media print {
+            body * { visibility: hidden; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+            .page-break { page-break-after: always; }
+        }
+
+        .thermal-receipt {
+            font-family: 'Inconsolata', monospace;
+            width: 80mm;
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            color: black;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+    <!-- Top Header -->
+    <header class="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white shadow-lg sticky top-0 z-30 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-400 text-slate-900 p-2 rounded-xl shadow font-bold text-xl flex items-center justify-center w-10 h-10">
+                    <i class="fa-solid font-bold fa-store text-emerald-900"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight leading-none" id="navShopName">Ninjacart Kirana & General Store</h1>
+                    <span class="text-xs text-emerald-200 font-medium">Digital Billing & Khata System</span>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button onclick="switchTab('billing')" id="tab-btn-billing" class="tab-btn px-3 py-2 rounded-lg text-sm font-semibold bg-white/20 text-white hover:bg-white/30 transition flex items-center gap-2">
+                    <i class="fa-solid fa-calculator"></i> <span class="hidden md:inline">Billing</span>
+                </button>
+                <button onclick="switchTab('khata')" id="tab-btn-khata" class="tab-btn px-3 py-2 rounded-lg text-sm font-semibold text-emerald-100 hover:bg-white/10 transition flex items-center gap-2">
+                    <i class="fa-solid fa-book"></i> <span class="hidden md:inline">Udhar / Khata</span>
+                    <span id="pendingUdharBadge" class="hidden bg-amber-500 text-slate-900 text-xs px-1.5 py-0.5 rounded-full font-bold">0</span>
+                </button>
+                <button onclick="switchTab('history')" id="tab-btn-history" class="tab-btn px-3 py-2 rounded-lg text-sm font-semibold text-emerald-100 hover:bg-white/10 transition flex items-center gap-2">
+                    <i class="fa-solid fa-receipt"></i> <span class="hidden md:inline">Sales History</span>
+                </button>
+                <button onclick="openSettingsModal()" class="p-2 rounded-lg text-emerald-100 hover:bg-white/10 transition" title="Shop Settings">
+                    <i class="fa-solid fa-gear text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 no-print">
+       
+        <!-- TAB 1: BILLING INTERFACE -->
+        <div id="tab-billing" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
+           
+            <!-- Left Panel: Quick Catalog & Fast Entry -->
+            <div class="lg:col-span-5 flex flex-col space-y-4">
+                <!-- Fast Item Search / Manual Entry Box -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <h2 class="text-sm font-bold uppercase text-slate-500 tracking-wider mb-3 flex items-center justify-between">
+                        <span><i class="fa-solid fa-cart-plus text-emerald-600 mr-1.5"></i> Add Item to Invoice</span>
+                        <span class="text-xs text-slate-400 font-normal">Press Enter to add</span>
+                    </h2>
+
+                    <form id="addItemForm" onsubmit="handleAddItem(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Item Name / Description</label>
+                            <input type="text" id="itemNameInput" list="catalogList" placeholder="e.g. Aashirvaad Atta, Fortune Oil..." required
+                                class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <datalist id="catalogList"></datalist>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Quantity</label>
+                                <input type="number" id="itemQtyInput" step="0.001" min="0.001" placeholder="1" required value="1"
+                                    oninput="calculateItemTotalPreview()"
+                                    class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Unit</label>
+                                <select id="itemUnitInput" onchange="calculateItemTotalPreview()"
+                                    class="w-full px-2 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white">
+                                    <option value="kg">kg (Kilogram)</option>
+                                    <option value="g">g (Gram)</option>
+                                    <option value="L">L (Litre)</option>
+                                    <option value="ml">ml (Millilitre)</option>
+                                    <option value="pcs" selected>pcs (Pieces)</option>
+                                    <option value="pkt">pkt (Packet)</option>
+                                    <option value="box">box (Box)</option>
+                                    <option value="doz">doz (Dozen)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Rate (₹ / Unit)</label>
+                                <input type="number" id="itemRateInput" step="0.01" min="0" placeholder="0.00" required
+                                    oninput="calculateItemTotalPreview()"
+                                    class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Fractional Quick Helper & Price Preview -->
+                        <div class="flex items-center justify-between bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">
+                            <div class="flex items-center gap-1.5 text-slate-600 font-medium overflow-x-auto py-0.5">
+                                <span class="whitespace-nowrap font-bold text-emerald-800">Quick Qty:</span>
+                                <button type="button" onclick="setQuickQty(100, 'g')" class="px-2 py-0.5 bg-white border border-slate-300 rounded hover:bg-emerald-50 hover:border-emerald-300 whitespace-nowrap">100g</button>
+                                <button type="button" onclick="setQuickQty(250, 'g')" class="px-2 py-0.5 bg-white border border-slate-300 rounded hover:bg-emerald-50 hover:border-emerald-300 whitespace-nowrap">250g</button>
+                                <button type="button" onclick="setQuickQty(500, 'g')" class="px-2 py-0.5 bg-white border border-slate-300 rounded hover:bg-emerald-50 hover:border-emerald-300 whitespace-nowrap">500g</button>
+                                <button type="button" onclick="setQuickQty(1, 'kg')" class="px-2 py-0.5 bg-white border border-slate-300 rounded hover:bg-emerald-50 hover:border-emerald-300 whitespace-nowrap">1 kg</button>
+                                <button type="button" onclick="setQuickQty(2, 'kg')" class="px-2 py-0.5 bg-white border border-slate-300 rounded hover:bg-emerald-50 hover:border-emerald-300 whitespace-nowrap">2 kg</button>
+                            </div>
+                            <div class="font-bold text-emerald-700 text-sm whitespace-nowrap pl-2">
+                                Item Total: ₹<span id="itemTotalPreview">0.00</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Add To Bill
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Quick Kirana Favorites Catalog Grid -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col min-h-[300px]">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-xs font-bold uppercase text-slate-500 tracking-wider">
+                            <i class="fa-solid fa-carrot text-amber-500 mr-1"></i> Quick Add Items
+                        </h2>
+                        <!-- Category Filter Buttons -->
+                        <select id="catalogCategoryFilter" onchange="renderQuickCatalog()" class="text-xs border border-slate-200 rounded px-2 py-1 bg-emerald-50 font-bold text-emerald-900 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            <option value="ALL">All Categories</option>
+                            <option value="VEG_ALL" selected>🥦 All Vegetables</option>
+                            <option value="Daily Veg">🥔 Daily Vegetables</option>
+                            <option value="Leafy Veg">🥬 Leafy Veggies (Saag)</option>
+                            <option value="Root Veg">🥕 Root Vegetables</option>
+                            <option value="Fruits">🍎 Fresh Fruits</option>
+                            <option value="Grains & Staples">🌾 Grains & Staples</option>
+                            <option value="Oil & Ghee">🪔 Oil & Ghee</option>
+                            <option value="Spices & Masala">🌶️ Spices & Masala</option>
+                        </select>
+                    </div>
+
+                    <div id="quickCatalogGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 overflow-y-auto max-h-[320px] p-1">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Active Bill / Invoice Preview -->
+            <div class="lg:col-span-7 flex flex-col space-y-4">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
+                   
+                    <!-- Customer Details Bar -->
+                    <div class="bg-slate-100 p-3 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-0.5">Customer Name</label>
+                            <input type="text" id="custName" placeholder="Cash Customer" value="Cash Customer"
+                                class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded font-medium focus:ring-1 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-0.5">Mobile Number</label>
+                            <input type="tel" id="custPhone" placeholder="10-digit number"
+                                class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded font-medium focus:ring-1 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-0.5">Bill No. & Date</label>
+                            <div class="text-xs font-semibold text-slate-700 pt-1 flex items-center justify-between">
+                                <span id="currentBillNo" class="text-emerald-700">#INV-1001</span>
+                                <span id="currentBillDate" class="text-slate-500">Today</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Items Table -->
+                    <div class="flex-1 overflow-x-auto overflow-y-auto max-h-[380px] p-2">
+                        <table class="w-full text-left text-xs text-slate-700 border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-200">
+                                    <th class="p-2">#</th>
+                                    <th class="p-2">Item Name</th>
+                                    <th class="p-2 text-right">Qty</th>
+                                    <th class="p-2 text-right">Rate (₹)</th>
+                                    <th class="p-2 text-right">Amount (₹)</th>
+                                    <th class="p-2 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoiceTableBody">
+                                <!-- Empty state or items list -->
+                            </tbody>
+                        </table>
+
+                        <div id="emptyInvoiceMsg" class="py-12 text-center text-slate-400">
+                            <i class="fa-solid fa-basket-shopping text-4xl mb-2 text-slate-300"></i>
+                            <p class="text-sm font-medium">No items added to the bill yet.</p>
+                            <p class="text-xs">Select from quick items or type item name on the left.</p>
+                        </div>
+                    </div>
+
+                    <!-- Bill Summary & Payment Section -->
+                    <div class="bg-slate-50 border-t border-slate-200 p-4 space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Left: Discount & GST & Notes -->
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-semibold text-slate-600 w-24">Discount (₹):</label>
+                                    <input type="number" id="billDiscount" value="0" min="0" step="1" oninput="renderInvoice()"
+                                        class="w-28 px-2 py-1 text-xs border border-slate-300 rounded font-semibold text-slate-800">
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-semibold text-slate-600 w-24">Tax / GST (%):</label>
+                                    <select id="billGstRate" onchange="renderInvoice()" class="w-28 px-2 py-1 text-xs border border-slate-300 rounded font-semibold bg-white text-slate-800">
+                                        <option value="0">0% (Exempted)</option>
+                                        <option value="5">5% (GST)</option>
+                                        <option value="12">12% (GST)</option>
+                                        <option value="18">18% (GST)</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-semibold text-slate-600 w-24">Payment Status:</label>
+                                    <select id="paymentStatus" onchange="handlePaymentStatusChange()" class="w-28 px-2 py-1 text-xs border border-slate-300 rounded font-bold bg-white text-slate-800">
+                                        <option value="PAID" class="text-emerald-600 font-bold">PAID</option>
+                                        <option value="UDHAR" class="text-red-600 font-bold">UDHAR / CREDIT</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Right: Calculations Breakdown -->
+                            <div class="bg-white p-3 rounded-lg border border-slate-200 space-y-1 text-xs">
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Subtotal:</span>
+                                    <span class="font-semibold">₹<span id="subTotalVal">0.00</span></span>
+                                </div>
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Discount:</span>
+                                    <span class="text-red-600 font-semibold">- ₹<span id="discountVal">0.00</span></span>
+                                </div>
+                                <div class="flex justify-between text-slate-600">
+                                    <span>GST Amount:</span>
+                                    <span class="font-semibold">₹<span id="gstVal">0.00</span></span>
+                                </div>
+                                <div class="border-t border-slate-200 my-1 pt-1 flex justify-between text-base font-bold text-emerald-800">
+                                    <span>Grand Total:</span>
+                                    <span>₹<span id="grandTotalVal">0.00</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Mode Selector & Quick Action Buttons -->
+                        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200">
+                            <!-- Payment Mode Buttons -->
+                            <div class="flex items-center space-x-1" id="paymentModeGroup">
+                                <label class="text-xs font-bold text-slate-500 mr-1">Mode:</label>
+                                <button type="button" onclick="setPaymentMode('CASH')" id="payBtn-CASH" class="pay-mode-btn text-xs px-2.5 py-1 rounded-md border font-semibold bg-emerald-600 text-white border-emerald-600">
+                                    <i class="fa-solid fa-money-bill-wave mr-1"></i> Cash
+                                </button>
+                                <button type="button" onclick="setPaymentMode('UPI')" id="payBtn-UPI" class="pay-mode-btn text-xs px-2.5 py-1 rounded-md border font-semibold bg-white text-slate-700 border-slate-300 hover:bg-slate-50">
+                                    <i class="fa-solid fa-qrcode mr-1 text-indigo-600"></i> UPI
+                                </button>
+                                <button type="button" onclick="setPaymentMode('CARD')" id="payBtn-CARD" class="pay-mode-btn text-xs px-2.5 py-1 rounded-md border font-semibold bg-white text-slate-700 border-slate-300 hover:bg-slate-50">
+                                    <i class="fa-solid fa-credit-card mr-1 text-blue-600"></i> Card
+                                </button>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                                <button type="button" onclick="clearInvoice()" class="px-3 py-2 text-xs font-semibold text-slate-600 bg-slate-200 hover:bg-slate-300 rounded-lg transition">
+                                    <i class="fa-solid fa-trash-can mr-1"></i> Clear
+                                </button>
+                                <button type="button" onclick="triggerUPIModal()" id="showQrBtn" class="px-3 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition flex items-center gap-1">
+                                    <i class="fa-solid fa-qrcode"></i> Show UPI QR
+                                </button>
+                                <button type="button" onclick="downloadInvoicePDF()" class="px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition flex items-center gap-1.5" title="Download Invoice as PDF document">
+                                    <i class="fa-solid fa-file-pdf"></i> Download PDF
+                                </button>
+                                <button type="button" onclick="saveAndPrint('A4')" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-print"></i> Print Invoice
+                                </button>
+                                <button type="button" onclick="saveAndPrint('POS')" class="px-3 py-2 text-xs font-bold text-slate-800 bg-amber-400 hover:bg-amber-500 rounded-lg shadow transition flex items-center gap-1.5" title="Print Thermal POS Receipt">
+                                    <i class="fa-solid fa-receipt"></i> Thermal POS
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TAB 2: UDHAR / KHATA BOOK INTERFACE -->
+        <div id="tab-khata" class="tab-content hidden space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-book-bookmark text-amber-600"></i> Customer Udhar / Khata Register
+                    </h2>
+                    <p class="text-xs text-slate-500">Track pending credit amounts, record payments, and send billing reminders.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="bg-red-50 border border-red-200 px-4 py-2 rounded-lg text-right">
+                        <span class="text-[10px] uppercase font-bold text-red-500 tracking-wider block">Total Outstanding Udhar</span>
+                        <span class="text-xl font-extrabold text-red-600">₹<span id="khataTotalOutstanding">0.00</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khata Search and List -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                    <div class="relative w-72">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="khataSearchInput" oninput="renderKhataBook()" placeholder="Search customer name or phone..."
+                            class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    </div>
+                    <span class="text-xs text-slate-500 font-medium" id="khataCustomerCount">0 Customers with credit</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-700">
+                        <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">Customer Name</th>
+                                <th class="p-3">Mobile Number</th>
+                                <th class="p-3">Last Udhar Date</th>
+                                <th class="p-3 text-right">Pending Balance (₹)</th>
+                                <th class="p-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="khataTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: SALES HISTORY -->
+        <div id="tab-history" class="tab-content hidden space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice-dollar text-emerald-600"></i> Recent Sales & Bill History
+                    </h2>
+                    <p class="text-xs text-slate-500">View past generated bills, reprint, or mark payments.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="exportSalesCSV()" class="px-3 py-1.5 text-xs font-semibold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 rounded-lg transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-csv"></i> Export CSV
+                    </button>
+                    <button onclick="clearSalesHistory()" class="px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-lg transition">
+                        <i class="fa-solid fa-trash"></i> Clear History
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                    <input type="text" id="salesSearchInput" oninput="renderSalesHistory()" placeholder="Search by Bill # or Customer..."
+                        class="w-64 px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    <span id="salesTotalRevenue" class="text-xs font-bold text-emerald-800">Total Sales: ₹0.00</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-700">
+                        <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">Bill No.</th>
+                                <th class="p-3">Date & Time</th>
+                                <th class="p-3">Customer</th>
+                                <th class="p-3">Mode</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3 text-right">Amount (₹)</th>
+                                <th class="p-3 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesHistoryTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- PRINT TEMPLATE: STANDARD A4/A5 GST/CASH MEMO INVOICE -->
+    <div id="printAreaStandard" class="print-area hidden bg-white p-8 max-w-3xl mx-auto border text-slate-900 text-sm">
+        <div class="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-4">
+            <div>
+                <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight uppercase" id="printShopName">NINJACART KIRANA & GENERAL STORE</h1>
+                <p class="text-xs text-slate-600" id="printShopAddress">Main Market Road, Near Gandhi Chowk</p>
+                <p class="text-xs text-slate-600">Phone: <span id="printShopPhone">+91 9876543210</span> | GSTIN: <span id="printShopGstin">27AAAAA0000A1Z5</span></p>
+            </div>
+            <div class="text-right">
+                <span class="inline-block px-3 py-1 bg-slate-900 text-white font-bold text-xs uppercase tracking-wider rounded mb-1" id="printBillTypeTitle">CASH MEMO</span>
+                <p class="text-xs font-bold text-slate-800" id="printBillNo">Bill No: #INV-1001</p>
+                <p class="text-xs text-slate-600" id="printBillDate">Date: 03-Oct-2026</p>
+            </div>
+        </div>
+
+        <!-- Customer Info -->
+        <div class="bg-slate-50 p-3 rounded border border-slate-200 mb-4 flex justify-between text-xs">
+            <div>
+                <span class="text-slate-500 font-semibold block">BILLED TO:</span>
+                <p class="font-bold text-slate-800 text-sm" id="printCustName">Cash Customer</p>
+                <p class="text-slate-600" id="printCustPhone">Phone: N/A</p>
+            </div>
+            <div class="text-right">
+                <span class="text-slate-500 font-semibold block">PAYMENT MODE & STATUS:</span>
+                <p class="font-bold text-slate-800 uppercase" id="printPayDetails">CASH | PAID</p>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <table class="w-full text-left text-xs border-collapse mb-4">
+            <thead>
+                <tr class="bg-slate-800 text-white font-bold uppercase">
+                    <th class="p-2 w-10">#</th>
+                    <th class="p-2">Item Description</th>
+                    <th class="p-2 text-right">Qty / Unit</th>
+                    <th class="p-2 text-right">Rate (₹)</th>
+                    <th class="p-2 text-right">Amount (₹)</th>
+                </tr>
+            </thead>
+            <tbody id="printTableBody" class="divide-y divide-slate-200">
+                <!-- Items -->
+            </tbody>
+        </table>
+
+        <!-- Totals Summary -->
+        <div class="flex justify-between items-end border-t border-slate-300 pt-3">
+            <div class="text-xs text-slate-600 max-w-xs space-y-1">
+                <p class="font-semibold text-slate-800">Terms & Conditions:</p>
+                <p id="printTermsText">1. Goods once sold will not be taken back without receipt.</p>
+                <p>2. Please check items at the time of delivery.</p>
+                <p class="pt-2 italic text-emerald-700 font-medium" id="printGreeting">Thank you for shopping with us! Visit again.</p>
+            </div>
+
+            <div class="w-64 space-y-1 text-xs">
+                <div class="flex justify-between text-slate-600">
+                    <span>Sub Total:</span>
+                    <span>₹<span id="printSubTotal">0.00</span></span>
+                </div>
+                <div class="flex justify-between text-slate-600" id="printDiscountRow">
+                    <span>Discount:</span>
+                    <span>- ₹<span id="printDiscount">0.00</span></span>
+                </div>
+                <div class="flex justify-between text-slate-600" id="printGstRow">
+                    <span>GST:</span>
+                    <span>₹<span id="printGst">0.00</span></span>
+                </div>
+                <div class="flex justify-between border-t-2 border-slate-800 pt-1 text-base font-extrabold text-slate-900">
+                    <span>Grand Total:</span>
+                    <span>₹<span id="printGrandTotal">0.00</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
+            Generated via Kirana Shop Billing System
+        </div>
+    </div>
+
+    <!-- PRINT TEMPLATE: THERMAL 3-INCH POS RECEIPT -->
+    <div id="printAreaPOS" class="print-area hidden">
+        <div class="thermal-receipt text-xs leading-tight">
+            <div class="text-center pb-2 border-b border-dashed border-black mb-2">
+                <h2 class="font-bold text-base uppercase" id="posShopName">NINJACART KIRANA & GENERAL STORE</h2>
+                <p class="text-[10px]" id="posShopAddress">Main Market Road, Gandhi Chowk</p>
+                <p class="text-[10px]">Ph: <span id="posShopPhone">9876543210</span></p>
+                <p class="text-[10px]" id="posShopGstinWrap">GSTIN: <span id="posShopGstin">-</span></p>
+            </div>
+
+            <div class="flex justify-between text-[10px] pb-1 border-b border-dashed border-black mb-2">
+                <div>
+                    <p>Bill: <span id="posBillNo">#1001</span></p>
+                    <p>Cust: <span id="posCustName">Cash</span></p>
+                </div>
+                <div class="text-right">
+                    <p><span id="posBillDate">03/10/26</span></p>
+                    <p><span id="posPayMode">CASH</span> (<span id="posPayStatus">PAID</span>)</p>
+                </div>
+            </div>
+
+            <table class="w-full text-left text-[11px] mb-2">
+                <thead>
+                    <tr class="border-b border-black font-bold">
+                        <th class="py-1">Item</th>
+                        <th class="text-right py-1">Qty</th>
+                        <th class="text-right py-1">Amt</th>
+                    </tr>
+                </thead>
+                <tbody id="posTableBody">
+                    <!-- POS Items -->
+                </tbody>
+            </table>
+
+            <div class="border-t border-dashed border-black pt-1 space-y-1 text-xs">
+                <div class="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>₹<span id="posSubTotal">0.00</span></span>
+                </div>
+                <div class="flex justify-between" id="posDiscountRow">
+                    <span>Discount:</span>
+                    <span>-₹<span id="posDiscount">0.00</span></span>
+                </div>
+                <div class="flex justify-between" id="posGstRow">
+                    <span>Tax/GST:</span>
+                    <span>₹<span id="posGst">0.00</span></span>
+                </div>
+                <div class="flex justify-between font-bold text-sm border-t border-black pt-1">
+                    <span>TOTAL:</span>
+                    <span>₹<span id="posGrandTotal">0.00</span></span>
+                </div>
+            </div>
+
+            <div class="text-center mt-3 pt-2 border-t border-dashed border-black text-[10px]">
+                <p class="font-bold">Thank You! Visit Again</p>
+                <p class="text-[9px] text-gray-600">Save Paper, Save Trees</p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL: SHOP SETTINGS -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-store text-emerald-600"></i> Kirana Shop Details
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="settingsForm" onsubmit="saveSettings(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Shop Name</label>
+                    <input type="text" id="settingShopName" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Shop Address / Tagline</label>
+                    <input type="text" id="settingShopAddress" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Mobile / Phone</label>
+                        <input type="text" id="settingShopPhone" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">GSTIN (Optional)</label>
+                        <input type="text" id="settingShopGstin" placeholder="27AAAAA0000A1Z5" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">UPI ID for Digital Payment QR</label>
+                    <input type="text" id="settingUpiId" placeholder="e.g. 9876543210@paytm or shop@upi" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-emerald-500">
+                </div>
+
+                <div class="pt-3 border-t flex justify-end gap-2">
+                    <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Cancel</button>
+                    <button type="submit" class="px-4 py-2 font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow">Save Details</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: UPI QR PAYMENT -->
+    <div id="upiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-qrcode text-indigo-600"></i> Scan to Pay via UPI
+                </h3>
+                <button onclick="closeUpiModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="bg-indigo-50 p-4 rounded-xl flex flex-col items-center justify-center">
+                <div class="bg-white p-2 rounded-lg shadow border border-indigo-100 mb-2">
+                    <img id="upiQrImage" src="" alt="UPI QR Code" class="w-48 h-48 object-contain">
+                </div>
+                <p class="text-xs font-bold text-indigo-900" id="upiAmountDisplay">Amount: ₹0.00</p>
+                <p class="text-[11px] text-slate-500 mt-1" id="upiIdDisplay">UPI ID: shop@upi</p>
+            </div>
+
+            <p class="text-xs text-slate-500">Accepts Google Pay, PhonePe, Paytm, BHIM or any UPI app.</p>
+
+            <button onclick="closeUpiModal()" class="w-full py-2 bg-slate-800 text-white font-bold text-xs rounded-lg hover:bg-slate-900 transition">
+                Close & Complete Bill
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: RECORD KHATA PAYMENT -->
+    <div id="khataPayModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-hand-holding-dollar text-emerald-600"></i> Record Payment
+                </h3>
+                <button onclick="closeKhataPayModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="text-xs space-y-3">
+                <div>
+                    <span class="text-slate-500 block">Customer Name:</span>
+                    <span id="khataModalCustName" class="font-bold text-slate-800 text-sm">Customer Name</span>
+                </div>
+                <div class="bg-red-50 p-2.5 rounded-lg border border-red-100 flex justify-between items-center">
+                    <span class="text-red-700 font-semibold">Current Pending Udhar:</span>
+                    <span id="khataModalCurrentPending" class="font-bold text-red-700 text-sm">₹0.00</span>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Received Amount (₹)</label>
+                    <input type="number" id="khataReceivedAmount" step="1" min="1" placeholder="Enter amount paid" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-emerald-500 text-sm font-bold">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t">
+                <button onclick="closeKhataPayModal()" class="px-3 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Cancel</button>
+                <button onclick="submitKhataPayment()" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow">Save Payment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 no-print"></div>
+
+    <script>
+        /* Global App State */
+        const DEFAULT_SHOP_SETTINGS = {
+            shopName: "Ninjacart Kirana & General Store",
+            shopAddress: "Main Market Road, Near City Bus Stand",
+            shopPhone: "+91 9876543210",
+            shopGstin: "27AAAAA0000A1Z5",
+            upiId: "9876543210@paytm"
+        };
+
+        // Popular Kirana & Vegetable Preset Inventory Catalog
+        const DEFAULT_CATALOG = [
+            // Daily Vegetables
+            { name: "Potato (Aloo)", category: "Daily Veg", defaultUnit: "kg", defaultRate: 30 },
+            { name: "Onion (Pyaz)", category: "Daily Veg", defaultUnit: "kg", defaultRate: 35 },
+            { name: "Tomato (Tamatar)", category: "Daily Veg", defaultUnit: "kg", defaultRate: 40 },
+            { name: "Green Chilli (Hari Mirch)", category: "Daily Veg", defaultUnit: "g", defaultRate: 80 },
+            { name: "Ginger (Adrak)", category: "Daily Veg", defaultUnit: "g", defaultRate: 120 },
+            { name: "Garlic (Lahsun)", category: "Daily Veg", defaultUnit: "g", defaultRate: 200 },
+            { name: "Cauliflower (Phool Gobhi)", category: "Daily Veg", defaultUnit: "pcs", defaultRate: 30 },
+            { name: "Cabbage (Patta Gobhi)", category: "Daily Veg", defaultUnit: "kg", defaultRate: 25 },
+            { name: "Lady Finger (Bhindi)", category: "Daily Veg", defaultUnit: "kg", defaultRate: 45 },
+            { name: "Brinjal (Baingan)", category: "Daily Veg", defaultUnit: "kg", defaultRate: 35 },
+            { name: "Bottle Gourd (Lauki)", category: "Daily Veg", defaultUnit: "kg", defaultRate: 30 },
+            { name: "Cucumber (Kheera)", category: "Daily Veg", defaultUnit: "kg", defaultRate: 30 },
+            { name: "Capsicum (Simla Mirch)", category: "Daily Veg", defaultUnit: "kg", defaultRate: 60 },
+            { name: "Lemon (Nimbu)", category: "Daily Veg", defaultUnit: "pcs", defaultRate: 5 },
+
+            // Leafy Veggies
+            { name: "Fresh Coriander (Dhaniya)", category: "Leafy Veg", defaultUnit: "pkt", defaultRate: 10 },
+            { name: "Spinach (Palak)", category: "Leafy Veg", defaultUnit: "pkt", defaultRate: 20 },
+            { name: "Mint Leaves (Pudina)", category: "Leafy Veg", defaultUnit: "pkt", defaultRate: 15 },
+            { name: "Fenugreek (Methi)", category: "Leafy Veg", defaultUnit: "pkt", defaultRate: 25 },
+
+            // Root Veggies
+            { name: "Carrot (Gajar)", category: "Root Veg", defaultUnit: "kg", defaultRate: 40 },
+            { name: "Radish (Mooli)", category: "Root Veg", defaultUnit: "kg", defaultRate: 30 },
+            { name: "Beetroot (Chukandar)", category: "Root Veg", defaultUnit: "kg", defaultRate: 50 },
+
+            // Fresh Fruits
+            { name: "Banana (Kela)", category: "Fruits", defaultUnit: "doz", defaultRate: 50 },
+            { name: "Apple (Seb)", category: "Fruits", defaultUnit: "kg", defaultRate: 120 },
+            { name: "Pomegranate (Anar)", category: "Fruits", defaultUnit: "kg", defaultRate: 140 },
+
+            // Kirana Staples
+            { name: "Aashirvaad Whole Wheat Atta", category: "Grains & Staples", defaultUnit: "kg", defaultRate: 52 },
+            { name: "Basmati Rice (Rozana)", category: "Grains & Staples", defaultUnit: "kg", defaultRate: 75 },
+            { name: "Toor Dal (Arhar)", category: "Grains & Staples", defaultUnit: "kg", defaultRate: 140 },
+            { name: "Sugar (Medium Grain)", category: "Grains & Staples", defaultUnit: "kg", defaultRate: 44 },
+            { name: "Fortune Refined Sunflower Oil 1L", category: "Oil & Ghee", defaultUnit: "pkt", defaultRate: 135 },
+            { name: "Tata Salt 1kg", category: "Spices & Masala", defaultUnit: "pkt", defaultRate: 28 },
+            { name: "MDH Turmeric (Haldi) 100g", category: "Spices & Masala", defaultUnit: "pkt", defaultRate: 35 }
+        ];
+
+        let shopSettings = JSON.parse(localStorage.getItem('kirana_settings')) || DEFAULT_SHOP_SETTINGS;
+        let invoiceItems = [];
+        let salesHistory = JSON.parse(localStorage.getItem('kirana_sales')) || [];
+        let khataBook = JSON.parse(localStorage.getItem('kirana_khata')) || {}; // { phone: { name, phone, pendingTotal, history: [] } }
+        let activePaymentMode = 'CASH';
+        let currentKhataCustomerPhone = null;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            // Update settings if using legacy store name in localStorage
+            if (shopSettings.shopName === "Shree Lakshmi Kirana & General Store" || shopSettings.shopName === "Shree Lakshmi Kirana Store") {
+                shopSettings.shopName = "Ninjacart Kirana & General Store";
+                localStorage.setItem('kirana_settings', JSON.stringify(shopSettings));
+            }
+           
+            initShopDetails();
+            renderQuickCatalog();
+            populateDatalist();
+            generateNewBillNumber();
+            renderInvoice();
+            renderKhataBook();
+            renderSalesHistory();
+           
+            // Set current date string
+            const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            document.getElementById('currentBillDate').innerText = today;
+        });
+
+        /* --- Shop Settings Logic --- */
+        function initShopDetails() {
+            document.getElementById('navShopName').innerText = shopSettings.shopName;
+            document.getElementById('printShopName').innerText = shopSettings.shopName.toUpperCase();
+            document.getElementById('printShopAddress').innerText = shopSettings.shopAddress;
+            document.getElementById('printShopPhone').innerText = shopSettings.shopPhone;
+            document.getElementById('printShopGstin').innerText = shopSettings.shopGstin || 'N/A';
+           
+            document.getElementById('posShopName').innerText = shopSettings.shopName.toUpperCase();
+            document.getElementById('posShopAddress').innerText = shopSettings.shopAddress;
+            document.getElementById('posShopPhone').innerText = shopSettings.shopPhone;
+            document.getElementById('posShopGstin').innerText = shopSettings.shopGstin || '-';
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settingShopName').value = shopSettings.shopName;
+            document.getElementById('settingShopAddress').value = shopSettings.shopAddress;
+            document.getElementById('settingShopPhone').value = shopSettings.shopPhone;
+            document.getElementById('settingShopGstin').value = shopSettings.shopGstin;
+            document.getElementById('settingUpiId').value = shopSettings.upiId || '';
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            shopSettings = {
+                shopName: document.getElementById('settingShopName').value,
+                shopAddress: document.getElementById('settingShopAddress').value,
+                shopPhone: document.getElementById('settingShopPhone').value,
+                shopGstin: document.getElementById('settingShopGstin').value,
+                upiId: document.getElementById('settingUpiId').value
+            };
+            localStorage.setItem('kirana_settings', JSON.stringify(shopSettings));
+            initShopDetails();
+            closeSettingsModal();
+            showToast('Shop details updated successfully!', 'success');
+        }
+
+        /* --- Quick Catalog & Datalist Logic --- */
+        function renderQuickCatalog() {
+            const filter = document.getElementById('catalogCategoryFilter').value;
+            const container = document.getElementById('quickCatalogGrid');
+            container.innerHTML = '';
+
+            let filtered = DEFAULT_CATALOG;
+            if (filter === 'VEG_ALL') {
+                filtered = DEFAULT_CATALOG.filter(c => ['Daily Veg', 'Leafy Veg', 'Root Veg'].includes(c.category));
+            } else if (filter !== 'ALL') {
+                filtered = DEFAULT_CATALOG.filter(c => c.category === filter);
+            }
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-emerald-50/60 hover:bg-emerald-100/80 border border-emerald-200/70 rounded-lg p-2 text-left cursor-pointer transition flex flex-col justify-between group shadow-sm";
+                card.onclick = () => quickAddItemToBill(item);
+               
+                // Show rate with unit info (e.g. ₹30/kg or ₹80/kg for g items)
+                const unitLabel = item.defaultUnit === 'g' ? 'g (₹' + item.defaultRate + '/kg)' : item.defaultUnit;
+
+                card.innerHTML = `
+                    <span class="text-xs font-bold text-slate-800 line-clamp-2 leading-snug group-hover:text-emerald-900">${item.name}</span>
+                    <div class="flex items-center justify-between mt-1.5 pt-1 border-t border-emerald-200/60 text-[11px]">
+                        <span class="text-slate-500 font-medium">${item.defaultUnit}</span>
+                        <span class="font-extrabold text-emerald-700">₹${item.defaultRate}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function populateDatalist() {
+            const list = document.getElementById('catalogList');
+            list.innerHTML = '';
+            DEFAULT_CATALOG.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                opt.dataset.unit = item.defaultUnit;
+                opt.dataset.rate = item.defaultRate;
+                list.appendChild(opt);
+            });
+
+            // Auto-fill unit & rate when item is picked from datalist
+            document.getElementById('itemNameInput').addEventListener('input', (e) => {
+                const match = DEFAULT_CATALOG.find(c => c.name.toLowerCase() === e.target.value.toLowerCase());
+                if (match) {
+                    document.getElementById('itemUnitInput').value = match.defaultUnit;
+                    document.getElementById('itemRateInput').value = match.defaultRate;
+                    calculateItemTotalPreview();
+                }
+            });
+        }
+
+        /* --- Billing & Invoice Logic --- */
+        function calculateItemTotalPreview() {
+            const qty = parseFloat(document.getElementById('itemQtyInput').value) || 0;
+            const rate = parseFloat(document.getElementById('itemRateInput').value) || 0;
+            const unit = document.getElementById('itemUnitInput').value;
+           
+            // Handle fractional conversions for grams & ml if rate is given per kg/L
+            let effectiveQty = qty;
+            if (unit === 'g' || unit === 'ml') {
+                effectiveQty = qty / 1000;
+            }
+
+            const total = effectiveQty * rate;
+            document.getElementById('itemTotalPreview').innerText = total.toFixed(2);
+        }
+
+        function setQuickQty(qty, unit) {
+            document.getElementById('itemQtyInput').value = qty;
+            document.getElementById('itemUnitInput').value = unit;
+            calculateItemTotalPreview();
+        }
+
+        function quickAddItemToBill(item) {
+            addItemToInvoice(item.name, 1, item.defaultUnit, item.defaultRate);
+        }
+
+        function handleAddItem(e) {
+            e.preventDefault();
+            const name = document.getElementById('itemNameInput').value.trim();
+            const qty = parseFloat(document.getElementById('itemQtyInput').value) || 0;
+            const unit = document.getElementById('itemUnitInput').value;
+            const rate = parseFloat(document.getElementById('itemRateInput').value) || 0;
+
+            if (!name || qty <= 0 || rate < 0) {
+                showToast('Please enter valid item details', 'error');
+                return;
+            }
+
+            addItemToInvoice(name, qty, unit, rate);
+
+            // Reset Input Form
+            document.getElementById('itemNameInput').value = '';
+            document.getElementById('itemQtyInput').value = '1';
+            document.getElementById('itemRateInput').value = '';
+            document.getElementById('itemTotalPreview').innerText = '0.00';
+            document.getElementById('itemNameInput').focus();
+        }
+
+        function addItemToInvoice(name, qty, unit, rate) {
+            let effectiveQty = qty;
+            if (unit === 'g' || unit === 'ml') {
+                effectiveQty = qty / 1000;
+            }
+            const amount = effectiveQty * rate;
+
+            // Check if item already exists in bill with same unit
+            const existingIndex = invoiceItems.findIndex(i => i.name.toLowerCase() === name.toLowerCase() && i.unit === unit);
+            if (existingIndex > -1) {
+                invoiceItems[existingIndex].qty += qty;
+                invoiceItems[existingIndex].amount += amount;
+            } else {
+                invoiceItems.push({
+                    id: Date.now(),
+                    name,
+                    qty,
+                    unit,
+                    rate,
+                    amount
+                });
+            }
+
+            renderInvoice();
+            showToast(`Added "${name}" to bill`, 'info');
+        }
+
+        function removeInvoiceItem(id) {
+            invoiceItems = invoiceItems.filter(item => item.id !== id);
+            renderInvoice();
+        }
+
+        function renderInvoice() {
+            const tbody = document.getElementById('invoiceTableBody');
+            const emptyMsg = document.getElementById('emptyInvoiceMsg');
+            tbody.innerHTML = '';
+
+            if (invoiceItems.length === 0) {
+                emptyMsg.classList.remove('hidden');
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+
+            let subtotal = 0;
+
+            invoiceItems.forEach((item, index) => {
+                subtotal += item.amount;
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 hover:bg-slate-50/80";
+                tr.innerHTML = `
+                    <td class="p-2 text-slate-400 font-medium">${index + 1}</td>
+                    <td class="p-2 font-semibold text-slate-800">${item.name}</td>
+                    <td class="p-2 text-right">${item.qty} <span class="text-[10px] text-slate-500">${item.unit}</span></td>
+                    <td class="p-2 text-right">₹${item.rate.toFixed(2)}</td>
+                    <td class="p-2 text-right font-bold text-slate-800">₹${item.amount.toFixed(2)}</td>
+                    <td class="p-2 text-center">
+                        <button onclick="removeInvoiceItem(${item.id})" class="text-slate-400 hover:text-red-600 transition px-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Calculations
+            const discount = parseFloat(document.getElementById('billDiscount').value) || 0;
+            const gstRate = parseFloat(document.getElementById('billGstRate').value) || 0;
+
+            const taxable = Math.max(0, subtotal - discount);
+            const gstVal = (taxable * gstRate) / 100;
+            const grandTotal = Math.round(taxable + gstVal);
+
+            document.getElementById('subTotalVal').innerText = subtotal.toFixed(2);
+            document.getElementById('discountVal').innerText = discount.toFixed(2);
+            document.getElementById('gstVal').innerText = gstVal.toFixed(2);
+            document.getElementById('grandTotalVal').innerText = grandTotal.toFixed(2);
+        }
+
+        function setPaymentMode(mode) {
+            activePaymentMode = mode;
+            document.querySelectorAll('.pay-mode-btn').forEach(btn => {
+                btn.className = "pay-mode-btn text-xs px-2.5 py-1 rounded-md border font-semibold bg-white text-slate-700 border-slate-300 hover:bg-slate-50";
+            });
+            const activeBtn = document.getElementById(`payBtn-${mode}`);
+            if (activeBtn) {
+                activeBtn.className = "pay-mode-btn text-xs px-2.5 py-1 rounded-md border font-semibold bg-emerald-600 text-white border-emerald-600 shadow-sm";
+            }
+        }
+
+        function handlePaymentStatusChange() {
+            const status = document.getElementById('paymentStatus').value;
+            if (status === 'UDHAR') {
+                const phone = document.getElementById('custPhone').value.trim();
+                if (!phone) {
+                    showToast('Please enter customer mobile number for Udhar / Credit record!', 'warning');
+                }
+            }
+        }
+
+        function clearInvoice() {
+            invoiceItems = [];
+            document.getElementById('custName').value = 'Cash Customer';
+            document.getElementById('custPhone').value = '';
+            document.getElementById('billDiscount').value = '0';
+            document.getElementById('billGstRate').value = '0';
+            document.getElementById('paymentStatus').value = 'PAID';
+            setPaymentMode('CASH');
+            renderInvoice();
+            generateNewBillNumber();
+            showToast('Invoice cleared', 'info');
+        }
+
+        function generateNewBillNumber() {
+            const nextNo = salesHistory.length > 0 ? 1001 + salesHistory.length : 1001;
+            document.getElementById('currentBillNo').innerText = `#INV-${nextNo}`;
+            return `#INV-${nextNo}`;
+        }
+
+        /* --- UPI QR Code Generator --- */
+        function triggerUPIModal() {
+            const grandTotal = document.getElementById('grandTotalVal').innerText;
+            if (parseFloat(grandTotal) <= 0) {
+                showToast('Bill total must be greater than zero', 'error');
+                return;
+            }
+
+            const upiId = shopSettings.upiId || '9876543210@paytm';
+            const shopNameEncoded = encodeURIComponent(shopSettings.shopName);
+            const upiUrl = `upi://pay?pa=${upiId}&pn=${shopNameEncoded}&am=${grandTotal}&cu=INR`;
+           
+            // Use QR Server API
+            const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUrl)}`;
+           
+            document.getElementById('upiQrImage').src = qrApi;
+            document.getElementById('upiAmountDisplay').innerText = `Amount: ₹${grandTotal}`;
+            document.getElementById('upiIdDisplay').innerText = `UPI ID: ${upiId}`;
+           
+            document.getElementById('upiModal').classList.remove('hidden');
+        }
+
+        function closeUpiModal() {
+            document.getElementById('upiModal').classList.add('hidden');
+        }
+
+        /* --- Print & Save Sales Logic --- */
+        function saveAndPrint(layoutType) {
+            if (invoiceItems.length === 0) {
+                showToast('Cannot print empty bill. Please add items.', 'error');
+                return;
+            }
+
+            const custName = document.getElementById('custName').value.trim() || 'Cash Customer';
+            const custPhone = document.getElementById('custPhone').value.trim() || 'N/A';
+            const billNo = document.getElementById('currentBillNo').innerText;
+            const billDate = document.getElementById('currentBillDate').innerText;
+            const paymentStatus = document.getElementById('paymentStatus').value;
+            const subtotal = parseFloat(document.getElementById('subTotalVal').innerText);
+            const discount = parseFloat(document.getElementById('discountVal').innerText);
+            const gst = parseFloat(document.getElementById('gstVal').innerText);
+            const grandTotal = parseFloat(document.getElementById('grandTotalVal').innerText);
+
+            // Validation for Udhar
+            if (paymentStatus === 'UDHAR' && (!custPhone || custPhone === 'N/A')) {
+                showToast('Mobile number is MANDATORY for Udhar/Credit sales!', 'error');
+                document.getElementById('custPhone').focus();
+                return;
+            }
+
+            // Save Sale to Sales History
+            const saleRecord = {
+                billNo,
+                date: billDate,
+                timestamp: new Date().toISOString(),
+                custName,
+                custPhone,
+                items: [...invoiceItems],
+                subtotal,
+                discount,
+                gst,
+                grandTotal,
+                paymentMode: activePaymentMode,
+                paymentStatus
+            };
+
+            salesHistory.unshift(saleRecord);
+            localStorage.setItem('kirana_sales', JSON.stringify(salesHistory));
+
+            // Record into Khata if status is UDHAR
+            if (paymentStatus === 'UDHAR') {
+                recordKhataEntry(custName, custPhone, grandTotal, billNo);
+            }
+
+            // Populate Print Template
+            if (layoutType === 'A4') {
+                populateStandardPrintTemplate(saleRecord);
+                window.print();
+            } else if (layoutType === 'POS') {
+                populatePOSPrintTemplate(saleRecord);
+                window.print();
+            }
+
+            // Reset and refresh state
+            renderSalesHistory();
+            renderKhataBook();
+            showToast(`Invoice ${billNo} Saved & Sent to Printer!`, 'success');
+           
+            setTimeout(() => {
+                clearInvoice();
+            }, 1000);
+        }
+
+        function populateStandardPrintTemplate(sale) {
+            document.getElementById('printBillNo').innerText = `Bill No: ${sale.billNo || '#INV-1001'}`;
+            document.getElementById('printBillDate').innerText = `Date: ${sale.date || ''}`;
+            document.getElementById('printCustName').innerText = sale.custName || 'Cash Customer';
+            document.getElementById('printCustPhone').innerText = `Phone: ${sale.custPhone || 'N/A'}`;
+            document.getElementById('printPayDetails').innerText = `${sale.paymentMode || 'CASH'} | ${sale.paymentStatus || 'PAID'}`;
+
+            document.getElementById('printBillTypeTitle').innerText = sale.paymentStatus === 'UDHAR' ? 'CREDIT MEMO / UDHAR' : 'CASH MEMO';
+
+            const tbody = document.getElementById('printTableBody');
+            tbody.innerHTML = '';
+
+            const items = sale.items || [];
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400 font-medium">No items in bill</td></tr>`;
+            } else {
+                items.forEach((item, idx) => {
+                    const qty = Number(item.qty) || 0;
+                    const rate = Number(item.rate) || 0;
+                    const amount = Number(item.amount) || (qty * rate);
+                    const unit = item.unit || 'pcs';
+
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-200";
+                    tr.innerHTML = `
+                        <td class="p-2.5 text-slate-700">${idx + 1}</td>
+                        <td class="p-2.5 font-semibold text-slate-900">${item.name || 'Item'}</td>
+                        <td class="p-2.5 text-right text-slate-800">${qty} ${unit}</td>
+                        <td class="p-2.5 text-right text-slate-800">₹${rate.toFixed(2)}</td>
+                        <td class="p-2.5 text-right font-bold text-slate-900">₹${amount.toFixed(2)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            const subtotal = Number(sale.subtotal) || items.reduce((acc, i) => acc + (Number(i.amount) || 0), 0);
+            const discount = Number(sale.discount) || 0;
+            const gst = Number(sale.gst) || 0;
+            const grandTotal = Number(sale.grandTotal) || Math.max(0, subtotal - discount + gst);
+
+            document.getElementById('printSubTotal').innerText = subtotal.toFixed(2);
+            document.getElementById('printDiscount').innerText = discount.toFixed(2);
+            document.getElementById('printGst').innerText = gst.toFixed(2);
+            document.getElementById('printGrandTotal').innerText = grandTotal.toFixed(2);
+
+            // Hide print POS container and show Standard container
+            document.getElementById('printAreaPOS').classList.add('hidden');
+            document.getElementById('printAreaStandard').classList.remove('hidden');
+        }
+
+        function populatePOSPrintTemplate(sale) {
+            document.getElementById('posBillNo').innerText = sale.billNo;
+            document.getElementById('posBillDate').innerText = sale.date;
+            document.getElementById('posCustName').innerText = sale.custName;
+            document.getElementById('posPayMode').innerText = sale.paymentMode;
+            document.getElementById('posPayStatus').innerText = sale.paymentStatus;
+
+            const tbody = document.getElementById('posTableBody');
+            tbody.innerHTML = '';
+            sale.items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-200";
+                tr.innerHTML = `
+                    <td class="py-1 leading-tight">${item.name}</td>
+                    <td class="py-1 text-right whitespace-nowrap">${item.qty}${item.unit}</td>
+                    <td class="py-1 text-right font-bold whitespace-nowrap">₹${item.amount.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('posSubTotal').innerText = sale.subtotal.toFixed(2);
+            document.getElementById('posDiscount').innerText = sale.discount.toFixed(2);
+            document.getElementById('posGst').innerText = sale.gst.toFixed(2);
+            document.getElementById('posGrandTotal').innerText = sale.grandTotal.toFixed(2);
+
+            // Hide standard container and show POS container
+            document.getElementById('printAreaStandard').classList.add('hidden');
+            document.getElementById('printAreaPOS').classList.remove('hidden');
+        }
+
+
+        /* --- Udhar / Khata Book Logic --- */
+        function recordKhataEntry(name, phone, amount, billNo) {
+            if (!khataBook[phone]) {
+                khataBook[phone] = {
+                    name,
+                    phone,
+                    pendingTotal: 0,
+                    lastUpdated: new Date().toLocaleDateString('en-IN'),
+                    history: []
+                };
+            }
+
+            khataBook[phone].name = name; // Update name in case modified
+            khataBook[phone].pendingTotal += amount;
+            khataBook[phone].lastUpdated = new Date().toLocaleDateString('en-IN');
+            khataBook[phone].history.push({
+                type: 'UDHAR_ADDED',
+                amount,
+                billNo,
+                date: new Date().toLocaleDateString('en-IN')
+            });
+
+            localStorage.setItem('kirana_khata', JSON.stringify(khataBook));
+        }
+
+        function renderKhataBook() {
+            const tbody = document.getElementById('khataTableBody');
+            const search = (document.getElementById('khataSearchInput').value || '').toLowerCase();
+            tbody.innerHTML = '';
+
+            let totalOutstanding = 0;
+            let customerCount = 0;
+
+            Object.values(khataBook).forEach(cust => {
+                if (cust.pendingTotal > 0) {
+                    totalOutstanding += cust.pendingTotal;
+                    customerCount++;
+
+                    if (cust.name.toLowerCase().includes(search) || cust.phone.includes(search)) {
+                        const tr = document.createElement('tr');
+                        tr.className = "border-b border-slate-100 hover:bg-slate-50";
+                        tr.innerHTML = `
+                            <td class="p-3 font-bold text-slate-800">${cust.name}</td>
+                            <td class="p-3 text-slate-600 font-mono">${cust.phone}</td>
+                            <td class="p-3 text-slate-500">${cust.lastUpdated}</td>
+                            <td class="p-3 text-right font-extrabold text-red-600">₹${cust.pendingTotal.toFixed(2)}</td>
+                            <td class="p-3 text-center space-x-1">
+                                <button onclick="openKhataPayModal('${cust.phone}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold shadow-sm transition">
+                                    <i class="fa-solid fa-hand-holding-dollar mr-1"></i> Receive Payment
+                                </button>
+                                <button onclick="sendWhatsAppReminder('${cust.phone}', '${cust.name}', ${cust.pendingTotal})" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[11px] font-bold transition">
+                                    <i class="fa-brands fa-whatsapp mr-1 text-emerald-600"></i> Reminder
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                }
+            });
+
+            if (customerCount === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400 font-medium">No active Udhar/Credit accounts found. All payments cleared!</td></tr>`;
+            }
+
+            document.getElementById('khataTotalOutstanding').innerText = totalOutstanding.toFixed(2);
+            document.getElementById('khataCustomerCount').innerText = `${customerCount} Customers with outstanding balance`;
+
+            // Badge counter on header tab
+            const badge = document.getElementById('pendingUdharBadge');
+            if (customerCount > 0) {
+                badge.innerText = customerCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function openKhataPayModal(phone) {
+            currentKhataCustomerPhone = phone;
+            const cust = khataBook[phone];
+            if (!cust) return;
+
+            document.getElementById('khataModalCustName').innerText = cust.name;
+            document.getElementById('khataModalCurrentPending').innerText = `₹${cust.pendingTotal.toFixed(2)}`;
+            document.getElementById('khataReceivedAmount').value = '';
+            document.getElementById('khataPayModal').classList.remove('hidden');
+        }
+
+        function closeKhataPayModal() {
+            document.getElementById('khataPayModal').classList.add('hidden');
+            currentKhataCustomerPhone = null;
+        }
+
+        function submitKhataPayment() {
+            const amount = parseFloat(document.getElementById('khataReceivedAmount').value) || 0;
+            if (amount <= 0 || !currentKhataCustomerPhone) {
+                showToast('Please enter a valid received amount', 'error');
+                return;
+            }
+
+            const cust = khataBook[currentKhataCustomerPhone];
+            if (cust) {
+                cust.pendingTotal = Math.max(0, cust.pendingTotal - amount);
+                cust.lastUpdated = new Date().toLocaleDateString('en-IN');
+                cust.history.push({
+                    type: 'PAYMENT_RECEIVED',
+                    amount,
+                    date: new Date().toLocaleDateString('en-IN')
+                });
+
+                localStorage.setItem('kirana_khata', JSON.stringify(khataBook));
+                renderKhataBook();
+                closeKhataPayModal();
+                showToast(`Received ₹${amount} from ${cust.name}`, 'success');
+            }
+        }
+
+        function sendWhatsAppReminder(phone, name, amount) {
+            const cleanPhone = phone.replace(/\D/g, '');
+            const msg = encodeURIComponent(`Namaste ${name} ji, this is a reminder from ${shopSettings.shopName} regarding your pending balance of ₹${amount.toFixed(2)}. Kindly clear the payment at your earliest convenience or via UPI (${shopSettings.upiId}). Thank you!`);
+            window.open(`https://wa.me/91${cleanPhone}?text=${msg}`, '_blank');
+        }
+
+
+        /* --- Sales History Logic --- */
+        function renderSalesHistory() {
+            const tbody = document.getElementById('salesHistoryTableBody');
+            const search = (document.getElementById('salesSearchInput').value || '').toLowerCase();
+            tbody.innerHTML = '';
+
+            let totalRev = 0;
+
+            salesHistory.forEach((sale) => {
+                totalRev += sale.grandTotal;
+
+                if (sale.billNo.toLowerCase().includes(search) || sale.custName.toLowerCase().includes(search) || sale.custPhone.includes(search)) {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-100 hover:bg-slate-50";
+                    tr.innerHTML = `
+                        <td class="p-3 font-bold text-emerald-800">${sale.billNo}</td>
+                        <td class="p-3 text-slate-500">${sale.date}</td>
+                        <td class="p-3">
+                            <span class="font-semibold text-slate-800 block">${sale.custName}</span>
+                            <span class="text-[10px] text-slate-400">${sale.custPhone}</span>
+                        </td>
+                        <td class="p-3 font-semibold text-slate-600">${sale.paymentMode}</td>
+                        <td class="p-3">
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${sale.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
+                                ${sale.paymentStatus}
+                            </span>
+                        </td>
+                        <td class="p-3 text-right font-bold text-slate-800">₹${sale.grandTotal.toFixed(2)}</td>
+                        <td class="p-3 text-center space-x-1">
+                            <button onclick="downloadPastSalePDF('${sale.billNo}')" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-xs font-semibold" title="Download PDF">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </button>
+                            <button onclick="reprintSale('${sale.billNo}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold" title="Reprint Bill">
+                                <i class="fa-solid fa-print"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            if (salesHistory.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">No sales recorded yet.</td></tr>`;
+            }
+
+            document.getElementById('salesTotalRevenue').innerText = `Total Revenue: ₹${totalRev.toFixed(2)}`;
+        }
+
+        function reprintSale(billNo) {
+            const sale = salesHistory.find(s => s.billNo === billNo);
+            if (sale) {
+                populateStandardPrintTemplate(sale);
+                window.print();
+            }
+        }
+
+        function downloadInvoicePDF() {
+            if (invoiceItems.length === 0) {
+                showToast('Cannot generate PDF for an empty bill. Please add items.', 'error');
+                return;
+            }
+
+            const custName = document.getElementById('custName').value.trim() || 'Cash Customer';
+            const custPhone = document.getElementById('custPhone').value.trim() || 'N/A';
+            const billNo = document.getElementById('currentBillNo').innerText;
+            const billDate = document.getElementById('currentBillDate').innerText;
+            const paymentStatus = document.getElementById('paymentStatus').value;
+            const subtotal = parseFloat(document.getElementById('subTotalVal').innerText);
+            const discount = parseFloat(document.getElementById('discountVal').innerText);
+            const gst = parseFloat(document.getElementById('gstVal').innerText);
+            const grandTotal = parseFloat(document.getElementById('grandTotalVal').innerText);
+
+            const saleRecord = {
+                billNo,
+                date: billDate,
+                custName,
+                custPhone,
+                items: [...invoiceItems],
+                subtotal,
+                discount,
+                gst,
+                grandTotal,
+                paymentMode: activePaymentMode,
+                paymentStatus
+            };
+
+            // Save sale to history if not already saved
+            const existing = salesHistory.find(s => s.billNo === billNo);
+            if (!existing) {
+                salesHistory.unshift(saleRecord);
+                localStorage.setItem('kirana_sales', JSON.stringify(salesHistory));
+                if (paymentStatus === 'UDHAR') {
+                    recordKhataEntry(custName, custPhone, grandTotal, billNo);
+                }
+                renderSalesHistory();
+                renderKhataBook();
+            }
+
+            generatePDFFromSaleRecord(saleRecord);
+        }
+
+        function downloadPastSalePDF(billNo) {
+            const sale = salesHistory.find(s => s.billNo === billNo);
+            if (sale) {
+                generatePDFFromSaleRecord(sale);
+            } else {
+                showToast('Invoice record not found!', 'error');
+            }
+        }
+
+        function generatePDFFromSaleRecord(saleRecord) {
+            populateStandardPrintTemplate(saleRecord);
+            const element = document.getElementById('printAreaStandard');
+           
+            element.classList.remove('hidden');
+
+            const opt = {
+                margin:       [0.3, 0.3, 0.3, 0.3],
+                filename:     `Invoice_${(saleRecord.billNo || 'INV').replace('#', '')}_${(saleRecord.custName ||
