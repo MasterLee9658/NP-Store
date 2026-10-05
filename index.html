@@ -43,7 +43,7 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-       
+        
         /* Thermal receipt specific print CSS */
         @media print {
             body * { visibility: hidden; }
@@ -99,10 +99,10 @@
 
     <!-- Main Container -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 no-print">
-       
+        
         <!-- TAB 1: BILLING INTERFACE -->
         <div id="tab-billing" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
-           
+            
             <!-- Left Panel: Quick Catalog & Fast Entry -->
             <div class="lg:col-span-5 flex flex-col space-y-4">
                 <!-- Fast Item Search / Manual Entry Box -->
@@ -199,7 +199,7 @@
             <!-- Right Panel: Active Bill / Invoice Preview -->
             <div class="lg:col-span-7 flex flex-col space-y-4">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
-                   
+                    
                     <!-- Customer Details Bar -->
                     <div class="bg-slate-100 p-3 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
                         <div>
@@ -359,7 +359,7 @@
                 <div class="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                     <div class="relative w-72">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                        <input type="text" id="khataSearchInput" oninput="renderKhataBook()" placeholder="Search customer name or phone..."
+                        <input type="text" id="khataSearchInput" oninput="renderKhataBook()" placeholder="Search customer name or phone..." 
                             class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500">
                     </div>
                     <span class="text-xs text-slate-500 font-medium" id="khataCustomerCount">0 Customers with credit</span>
@@ -405,7 +405,7 @@
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                    <input type="text" id="salesSearchInput" oninput="renderSalesHistory()" placeholder="Search by Bill # or Customer..."
+                    <input type="text" id="salesSearchInput" oninput="renderSalesHistory()" placeholder="Search by Bill # or Customer..." 
                         class="w-64 px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500">
                     <span id="salesTotalRevenue" class="text-xs font-bold text-emerald-800">Total Sales: ₹0.00</span>
                 </div>
@@ -743,7 +743,7 @@
                 shopSettings.shopName = "Ninjacart Kirana & General Store";
                 localStorage.setItem('kirana_settings', JSON.stringify(shopSettings));
             }
-           
+            
             initShopDetails();
             renderQuickCatalog();
             populateDatalist();
@@ -751,7 +751,7 @@
             renderInvoice();
             renderKhataBook();
             renderSalesHistory();
-           
+            
             // Set current date string
             const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
             document.getElementById('currentBillDate').innerText = today;
@@ -764,7 +764,7 @@
             document.getElementById('printShopAddress').innerText = shopSettings.shopAddress;
             document.getElementById('printShopPhone').innerText = shopSettings.shopPhone;
             document.getElementById('printShopGstin').innerText = shopSettings.shopGstin || 'N/A';
-           
+            
             document.getElementById('posShopName').innerText = shopSettings.shopName.toUpperCase();
             document.getElementById('posShopAddress').innerText = shopSettings.shopAddress;
             document.getElementById('posShopPhone').innerText = shopSettings.shopPhone;
@@ -816,7 +816,7 @@
                 const card = document.createElement('div');
                 card.className = "bg-emerald-50/60 hover:bg-emerald-100/80 border border-emerald-200/70 rounded-lg p-2 text-left cursor-pointer transition flex flex-col justify-between group shadow-sm";
                 card.onclick = () => quickAddItemToBill(item);
-               
+                
                 // Show rate with unit info (e.g. ₹30/kg or ₹80/kg for g items)
                 const unitLabel = item.defaultUnit === 'g' ? 'g (₹' + item.defaultRate + '/kg)' : item.defaultUnit;
 
@@ -858,7 +858,7 @@
             const qty = parseFloat(document.getElementById('itemQtyInput').value) || 0;
             const rate = parseFloat(document.getElementById('itemRateInput').value) || 0;
             const unit = document.getElementById('itemUnitInput').value;
-           
+            
             // Handle fractional conversions for grams & ml if rate is given per kg/L
             let effectiveQty = qty;
             if (unit === 'g' || unit === 'ml') {
@@ -1030,14 +1030,14 @@
             const upiId = shopSettings.upiId || '9876543210@paytm';
             const shopNameEncoded = encodeURIComponent(shopSettings.shopName);
             const upiUrl = `upi://pay?pa=${upiId}&pn=${shopNameEncoded}&am=${grandTotal}&cu=INR`;
-           
+            
             // Use QR Server API
             const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUrl)}`;
-           
+            
             document.getElementById('upiQrImage').src = qrApi;
             document.getElementById('upiAmountDisplay').innerText = `Amount: ₹${grandTotal}`;
             document.getElementById('upiIdDisplay').innerText = `UPI ID: ${upiId}`;
-           
+            
             document.getElementById('upiModal').classList.remove('hidden');
         }
 
@@ -1106,7 +1106,7 @@
             renderSalesHistory();
             renderKhataBook();
             showToast(`Invoice ${billNo} Saved & Sent to Printer!`, 'success');
-           
+            
             setTimeout(() => {
                 clearInvoice();
             }, 1000);
@@ -1430,9 +1430,106 @@
         function generatePDFFromSaleRecord(saleRecord) {
             populateStandardPrintTemplate(saleRecord);
             const element = document.getElementById('printAreaStandard');
-           
+            
             element.classList.remove('hidden');
 
             const opt = {
                 margin:       [0.3, 0.3, 0.3, 0.3],
-                filename:     `Invoice_${(saleRecord.billNo || 'INV').replace('#', '')}_${(saleRecord.custName ||
+                filename:     `Invoice_${(saleRecord.billNo || 'INV').replace('#', '')}_${(saleRecord.custName || 'Customer').replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, logging: false },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            showToast('Generating PDF file...', 'info');
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.classList.add('hidden');
+                showToast('PDF downloaded successfully!', 'success');
+            }).catch(err => {
+                element.classList.add('hidden');
+                showToast('Failed to download PDF', 'error');
+                console.error(err);
+            });
+        }
+
+        function exportSalesCSV() {
+            if (salesHistory.length === 0) {
+                showToast('No sales history to export', 'error');
+                return;
+            }
+
+            let csv = 'Bill No,Date,Customer Name,Phone,Mode,Status,Total Amount (INR)\n';
+            salesHistory.forEach(s => {
+                csv += `"${s.billNo}","${s.date}","${s.custName}","${s.custPhone}","${s.paymentMode}","${s.paymentStatus}",${s.grandTotal}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `Kirana_Sales_${new Date().toISOString().slice(0,10)}.csv`);
+            a.click();
+            showToast('Sales report downloaded as CSV', 'success');
+        }
+
+        function clearSalesHistory() {
+            if (salesHistory.length === 0) return;
+            if (window.confirm("Are you sure you want to clear all sales history? This action cannot be undone.")) {
+                salesHistory = [];
+                localStorage.removeItem('kirana_sales');
+                renderSalesHistory();
+                showToast('Sales history cleared', 'info');
+            }
+        }
+
+
+        /* --- Tab Switcher Logic --- */
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-white/20', 'text-white');
+                el.classList.add('text-emerald-100');
+            });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            activeBtn.classList.add('bg-white/20', 'text-white');
+        }
+
+        /* --- Toast Notification Helper --- */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            let bgClass = 'bg-slate-800 text-white';
+            let icon = 'fa-circle-info';
+
+            if (type === 'success') {
+                bgClass = 'bg-emerald-600 text-white';
+                icon = 'fa-circle-check';
+            } else if (type === 'error') {
+                bgClass = 'bg-red-600 text-white';
+                icon = 'fa-triangle-exclamation';
+            } else if (type === 'warning') {
+                bgClass = 'bg-amber-500 text-slate-900 font-bold';
+                icon = 'fa-bell';
+            }
+
+            toast.className = `${bgClass} px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
