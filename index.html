@@ -74,7 +74,7 @@
                     <i class="fa-solid font-bold fa-store text-emerald-900"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight leading-none" id="navShopName">Ninjacart Kirana & General Store</h1>
+                    <h1 class="text-xl font-bold tracking-tight leading-none" id="navShopName">Ninja Kirana Store</h1>
                     <span class="text-xs text-emerald-200 font-medium">Digital Billing & Khata System</span>
                 </div>
             </div>
@@ -319,7 +319,7 @@
                                 <button type="button" onclick="triggerUPIModal()" id="showQrBtn" class="px-3 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition flex items-center gap-1">
                                     <i class="fa-solid fa-qrcode"></i> Show UPI QR
                                 </button>
-                                <button type="button" onclick="downloadInvoicePDF()" class="px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition flex items-center gap-1.5" title="Download Invoice as PDF document">
+                                <button type="button" onclick="openDownloadPdfModal()" class="px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition flex items-center gap-1.5" title="Download Invoice as PDF document">
                                     <i class="fa-solid fa-file-pdf"></i> Download PDF
                                 </button>
                                 <button type="button" onclick="saveAndPrint('A4')" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow transition flex items-center gap-1.5">
@@ -434,72 +434,72 @@
     </main>
 
     <!-- PRINT TEMPLATE: STANDARD A4/A5 GST/CASH MEMO INVOICE -->
-    <div id="printAreaStandard" class="print-area hidden bg-white p-8 max-w-3xl mx-auto border text-slate-900 text-sm">
-        <div class="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-4">
+    <div id="printAreaStandard" class="print-area hidden bg-white p-8 max-w-3xl mx-auto border-2 border-emerald-600 rounded-xl text-slate-900 text-sm">
+        <div class="flex justify-between items-start border-b-2 border-emerald-600 pb-4 mb-4">
             <div>
-                <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight uppercase" id="printShopName">NINJACART KIRANA & GENERAL STORE</h1>
-                <p class="text-xs text-slate-600" id="printShopAddress">Main Market Road, Near Gandhi Chowk</p>
-                <p class="text-xs text-slate-600">Phone: <span id="printShopPhone">+91 9876543210</span> | GSTIN: <span id="printShopGstin">27AAAAA0000A1Z5</span></p>
+                <h1 class="text-2xl font-extrabold text-emerald-800 tracking-tight uppercase" id="printShopName">NINJA KIRANA STORE</h1>
+                <p class="text-xs text-slate-600" id="printShopAddress">Koyambedu Market - Chennai</p>
+                <p class="text-xs text-slate-600">Phone: <span id="printShopPhone">9840338032</span> | GSTIN: <span id="printShopGstin">29AAACZ8597L1Z8</span></p>
             </div>
             <div class="text-right">
-                <span class="inline-block px-3 py-1 bg-slate-900 text-white font-bold text-xs uppercase tracking-wider rounded mb-1" id="printBillTypeTitle">CASH MEMO</span>
+                <span class="inline-block px-3 py-1 bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider rounded-md mb-1 shadow-sm" id="printBillTypeTitle">CASH MEMO</span>
                 <p class="text-xs font-bold text-slate-800" id="printBillNo">Bill No: #INV-1001</p>
                 <p class="text-xs text-slate-600" id="printBillDate">Date: 03-Oct-2026</p>
             </div>
         </div>
 
         <!-- Customer Info -->
-        <div class="bg-slate-50 p-3 rounded border border-slate-200 mb-4 flex justify-between text-xs">
+        <div class="bg-emerald-50 p-3.5 rounded-lg border border-emerald-200 mb-4 flex justify-between text-xs">
             <div>
-                <span class="text-slate-500 font-semibold block">BILLED TO:</span>
+                <span class="text-emerald-700 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Billed To:</span>
                 <p class="font-bold text-slate-800 text-sm" id="printCustName">Cash Customer</p>
                 <p class="text-slate-600" id="printCustPhone">Phone: N/A</p>
             </div>
             <div class="text-right">
-                <span class="text-slate-500 font-semibold block">PAYMENT MODE & STATUS:</span>
-                <p class="font-bold text-slate-800 uppercase" id="printPayDetails">CASH | PAID</p>
+                <span class="text-emerald-700 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Payment Mode & Status:</span>
+                <p class="font-extrabold text-emerald-800 uppercase text-xs" id="printPayDetails">CASH | PAID</p>
             </div>
         </div>
 
         <!-- Items Table -->
         <table class="w-full text-left text-xs border-collapse mb-4">
             <thead>
-                <tr class="bg-slate-800 text-white font-bold uppercase">
-                    <th class="p-2 w-10">#</th>
-                    <th class="p-2">Item Description</th>
-                    <th class="p-2 text-right">Qty / Unit</th>
-                    <th class="p-2 text-right">Rate (₹)</th>
-                    <th class="p-2 text-right">Amount (₹)</th>
+                <tr class="bg-emerald-700 text-white font-bold uppercase">
+                    <th class="p-2.5 w-10 rounded-l">#</th>
+                    <th class="p-2.5">Item Description</th>
+                    <th class="p-2.5 text-right">Qty / Unit</th>
+                    <th class="p-2.5 text-right">Rate (₹)</th>
+                    <th class="p-2.5 text-right rounded-r">Amount (₹)</th>
                 </tr>
             </thead>
-            <tbody id="printTableBody" class="divide-y divide-slate-200">
+            <tbody id="printTableBody" class="divide-y divide-emerald-100">
                 <!-- Items -->
             </tbody>
         </table>
 
         <!-- Totals Summary -->
-        <div class="flex justify-between items-end border-t border-slate-300 pt-3">
+        <div class="flex justify-between items-end border-t-2 border-emerald-600 pt-3">
             <div class="text-xs text-slate-600 max-w-xs space-y-1">
-                <p class="font-semibold text-slate-800">Terms & Conditions:</p>
+                <p class="font-bold text-emerald-800">Terms & Conditions:</p>
                 <p id="printTermsText">1. Goods once sold will not be taken back without receipt.</p>
                 <p>2. Please check items at the time of delivery.</p>
-                <p class="pt-2 italic text-emerald-700 font-medium" id="printGreeting">Thank you for shopping with us! Visit again.</p>
+                <p class="pt-2 italic text-emerald-700 font-semibold" id="printGreeting">Thank you for shopping with us! Visit again.</p>
             </div>
 
-            <div class="w-64 space-y-1 text-xs">
+            <div class="w-64 space-y-1.5 text-xs bg-emerald-50 p-3 rounded-lg border border-emerald-200">
                 <div class="flex justify-between text-slate-600">
                     <span>Sub Total:</span>
-                    <span>₹<span id="printSubTotal">0.00</span></span>
+                    <span class="font-semibold text-slate-800">₹<span id="printSubTotal">0.00</span></span>
                 </div>
                 <div class="flex justify-between text-slate-600" id="printDiscountRow">
                     <span>Discount:</span>
-                    <span>- ₹<span id="printDiscount">0.00</span></span>
+                    <span class="text-red-600 font-semibold">- ₹<span id="printDiscount">0.00</span></span>
                 </div>
                 <div class="flex justify-between text-slate-600" id="printGstRow">
                     <span>GST:</span>
-                    <span>₹<span id="printGst">0.00</span></span>
+                    <span class="font-semibold text-slate-800">₹<span id="printGst">0.00</span></span>
                 </div>
-                <div class="flex justify-between border-t-2 border-slate-800 pt-1 text-base font-extrabold text-slate-900">
+                <div class="flex justify-between border-t-2 border-emerald-600 pt-1.5 text-base font-extrabold text-emerald-900">
                     <span>Grand Total:</span>
                     <span>₹<span id="printGrandTotal">0.00</span></span>
                 </div>
@@ -515,10 +515,10 @@
     <div id="printAreaPOS" class="print-area hidden">
         <div class="thermal-receipt text-xs leading-tight">
             <div class="text-center pb-2 border-b border-dashed border-black mb-2">
-                <h2 class="font-bold text-base uppercase" id="posShopName">NINJACART KIRANA & GENERAL STORE</h2>
-                <p class="text-[10px]" id="posShopAddress">Main Market Road, Gandhi Chowk</p>
-                <p class="text-[10px]">Ph: <span id="posShopPhone">9876543210</span></p>
-                <p class="text-[10px]" id="posShopGstinWrap">GSTIN: <span id="posShopGstin">-</span></p>
+                <h2 class="font-bold text-base uppercase" id="posShopName">NINJA KIRANA STORE</h2>
+                <p class="text-[10px]" id="posShopAddress">Koyambedu Market - Chennai</p>
+                <p class="text-[10px]">Ph: <span id="posShopPhone">9840338032</span></p>
+                <p class="text-[10px]" id="posShopGstinWrap">GSTIN: <span id="posShopGstin">29AAACZ8597L1Z8</span></p>
             </div>
 
             <div class="flex justify-between text-[10px] pb-1 border-b border-dashed border-black mb-2">
@@ -571,6 +571,65 @@
         </div>
     </div>
 
+    <!-- MODAL: PDF DOWNLOAD OPTIONS -->
+    <div id="pdfDownloadModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                    <i class="fa-solid fa-file-pdf text-blue-600"></i> Download Invoice PDF
+                </h3>
+                <button onclick="closePdfDownloadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Select Paper Format</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="pdfFormatA4Btn" onclick="selectPdfFormat('A4')" class="p-2.5 border-2 rounded-xl text-left font-semibold flex flex-col justify-between border-blue-600 bg-blue-50/50 text-blue-900">
+                            <span class="font-bold block text-sm"><i class="fa-solid fa-file-lines mr-1"></i> A4 Standard</span>
+                            <span class="text-[10px] text-slate-500 mt-1">Full GST / Cash Memo</span>
+                        </button>
+                        <button type="button" id="pdfFormatPOSBtn" onclick="selectPdfFormat('POS')" class="p-2.5 border rounded-xl text-left font-semibold flex flex-col justify-between border-slate-300 text-slate-700 hover:bg-slate-50">
+                            <span class="font-bold block text-sm"><i class="fa-solid fa-receipt mr-1"></i> 3" Thermal POS</span>
+                            <span class="text-[10px] text-slate-500 mt-1">Compact Receipt</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <input type="checkbox" id="pdfIncludeQrCheckbox" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                        <div>
+                            <span class="font-bold text-slate-800 block">Include Payment UPI QR Code</span>
+                            <span class="text-[10px] text-slate-500 block">Allows customer to scan & pay directly from PDF</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t">
+                <button onclick="closePdfDownloadModal()" class="px-3 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Cancel</button>
+                <button onclick="confirmAndDownloadPDF()" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-download"></i> Download Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIRMATION DIALOG -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-xs w-full p-5 text-center space-y-3">
+            <div class="text-amber-500 text-3xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="font-bold text-slate-800 text-sm" id="confirmModalTitle">Are you sure?</h3>
+            <p class="text-xs text-slate-500" id="confirmModalMsg">This action cannot be undone.</p>
+            <div class="flex justify-center gap-2 pt-2">
+                <button onclick="closeConfirmModal(false)" class="px-4 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Cancel</button>
+                <button id="confirmModalActionBtn" class="px-4 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow">Confirm</button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL: SHOP SETTINGS -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
@@ -678,11 +737,11 @@
     <script>
         /* Global App State */
         const DEFAULT_SHOP_SETTINGS = {
-            shopName: "Ninjacart Kirana & General Store",
-            shopAddress: "Main Market Road, Near City Bus Stand",
-            shopPhone: "+91 9876543210",
-            shopGstin: "27AAAAA0000A1Z5",
-            upiId: "9876543210@paytm"
+            shopName: "Ninja Kirana Store",
+            shopAddress: "Koyambedu Market - Chennai",
+            shopPhone: "9840338032",
+            shopGstin: "29AAACZ8597L1Z8",
+            upiId: "9840338032@paytm"
         };
 
         // Popular Kirana & Vegetable Preset Inventory Catalog
@@ -735,12 +794,15 @@
         let khataBook = JSON.parse(localStorage.getItem('kirana_khata')) || {}; // { phone: { name, phone, pendingTotal, history: [] } }
         let activePaymentMode = 'CASH';
         let currentKhataCustomerPhone = null;
+        let selectedPdfFormat = 'A4';
+        let targetDownloadBillNo = null;
+        let pendingConfirmAction = null;
 
         // Initialize App
         window.addEventListener('DOMContentLoaded', () => {
-            // Update settings if using legacy store name in localStorage
-            if (shopSettings.shopName === "Shree Lakshmi Kirana & General Store" || shopSettings.shopName === "Shree Lakshmi Kirana Store") {
-                shopSettings.shopName = "Ninjacart Kirana & General Store";
+            // Update settings if using legacy or previous store details
+            if (shopSettings.shopName !== "Ninja Kirana Store") {
+                shopSettings = DEFAULT_SHOP_SETTINGS;
                 localStorage.setItem('kirana_settings', JSON.stringify(shopSettings));
             }
             
@@ -1135,13 +1197,13 @@
                     const unit = item.unit || 'pcs';
 
                     const tr = document.createElement('tr');
-                    tr.className = "border-b border-slate-200";
+                    tr.className = "border-b border-emerald-100 hover:bg-emerald-50/50";
                     tr.innerHTML = `
                         <td class="p-2.5 text-slate-700">${idx + 1}</td>
                         <td class="p-2.5 font-semibold text-slate-900">${item.name || 'Item'}</td>
                         <td class="p-2.5 text-right text-slate-800">${qty} ${unit}</td>
                         <td class="p-2.5 text-right text-slate-800">₹${rate.toFixed(2)}</td>
-                        <td class="p-2.5 text-right font-bold text-slate-900">₹${amount.toFixed(2)}</td>
+                        <td class="p-2.5 text-right font-bold text-emerald-800">₹${amount.toFixed(2)}</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -1373,7 +1435,49 @@
             }
         }
 
-        function downloadInvoicePDF() {
+        function openDownloadPdfModal(billNo = null) {
+            targetDownloadBillNo = billNo;
+            
+            if (!billNo && invoiceItems.length === 0) {
+                showToast('Cannot generate PDF for an empty bill. Please add items.', 'error');
+                return;
+            }
+
+            selectPdfFormat('A4');
+            document.getElementById('pdfDownloadModal').classList.remove('hidden');
+        }
+
+        function closePdfDownloadModal() {
+            document.getElementById('pdfDownloadModal').classList.add('hidden');
+            targetDownloadBillNo = null;
+        }
+
+        function selectPdfFormat(fmt) {
+            selectedPdfFormat = fmt;
+            const a4Btn = document.getElementById('pdfFormatA4Btn');
+            const posBtn = document.getElementById('pdfFormatPOSBtn');
+
+            if (fmt === 'A4') {
+                a4Btn.className = "p-2.5 border-2 rounded-xl text-left font-semibold flex flex-col justify-between border-blue-600 bg-blue-50/50 text-blue-900";
+                posBtn.className = "p-2.5 border rounded-xl text-left font-semibold flex flex-col justify-between border-slate-300 text-slate-700 hover:bg-slate-50";
+            } else {
+                posBtn.className = "p-2.5 border-2 rounded-xl text-left font-semibold flex flex-col justify-between border-blue-600 bg-blue-50/50 text-blue-900";
+                a4Btn.className = "p-2.5 border rounded-xl text-left font-semibold flex flex-col justify-between border-slate-300 text-slate-700 hover:bg-slate-50";
+            }
+        }
+
+        function confirmAndDownloadPDF() {
+            const includeQr = document.getElementById('pdfIncludeQrCheckbox').checked;
+            closePdfDownloadModal();
+
+            if (targetDownloadBillNo) {
+                downloadPastSalePDF(targetDownloadBillNo, selectedPdfFormat, includeQr);
+            } else {
+                downloadActiveInvoicePDF(selectedPdfFormat, includeQr);
+            }
+        }
+
+        function downloadActiveInvoicePDF(format = 'A4', includeQr = true) {
             if (invoiceItems.length === 0) {
                 showToast('Cannot generate PDF for an empty bill. Please add items.', 'error');
                 return;
@@ -1403,7 +1507,7 @@
                 paymentStatus
             };
 
-            // Save sale to history if not already saved
+            // Save sale to history if not already present
             const existing = salesHistory.find(s => s.billNo === billNo);
             if (!existing) {
                 salesHistory.unshift(saleRecord);
@@ -1415,33 +1519,73 @@
                 renderKhataBook();
             }
 
-            generatePDFFromSaleRecord(saleRecord);
+            generatePDFFromSaleRecord(saleRecord, format, includeQr);
         }
 
-        function downloadPastSalePDF(billNo) {
+        function downloadPastSalePDF(billNo, format = 'A4', includeQr = true) {
             const sale = salesHistory.find(s => s.billNo === billNo);
             if (sale) {
-                generatePDFFromSaleRecord(sale);
+                generatePDFFromSaleRecord(sale, format, includeQr);
             } else {
                 showToast('Invoice record not found!', 'error');
             }
         }
 
-        function generatePDFFromSaleRecord(saleRecord) {
-            populateStandardPrintTemplate(saleRecord);
-            const element = document.getElementById('printAreaStandard');
-            
+        function generatePDFFromSaleRecord(saleRecord, format = 'A4', includeQr = true) {
+            let element;
+
+            if (format === 'A4') {
+                populateStandardPrintTemplate(saleRecord);
+                element = document.getElementById('printAreaStandard');
+
+                // Append temporary QR code in PDF layout if enabled
+                let qrContainer = document.getElementById('pdfQrContainerA4');
+                if (!qrContainer) {
+                    qrContainer = document.createElement('div');
+                    qrContainer.id = 'pdfQrContainerA4';
+                    qrContainer.className = 'mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600';
+                    element.appendChild(qrContainer);
+                }
+
+                if (includeQr && shopSettings.upiId) {
+                    const upiUrl = `upi://pay?pa=${shopSettings.upiId}&pn=${encodeURIComponent(shopSettings.shopName)}&am=${saleRecord.grandTotal}&cu=INR`;
+                    const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(upiUrl)}`;
+                    qrContainer.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <img src="${qrApi}" class="w-20 h-20 border rounded p-1 bg-white" alt="UPI QR">
+                            <div>
+                                <p class="font-bold text-slate-800">Scan to Pay via UPI</p>
+                                <p class="text-[10px] text-slate-500">UPI ID: ${shopSettings.upiId}</p>
+                                <p class="text-[10px] font-bold text-emerald-700">Amount: ₹${saleRecord.grandTotal.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <div class="text-right text-[10px] text-slate-400">
+                            Accepts Google Pay, PhonePe, Paytm & BHIM
+                        </div>
+                    `;
+                    qrContainer.style.display = 'flex';
+                } else {
+                    qrContainer.style.display = 'none';
+                }
+
+            } else {
+                populatePOSPrintTemplate(saleRecord);
+                element = document.getElementById('printAreaPOS');
+            }
+
             element.classList.remove('hidden');
 
             const opt = {
-                margin:       [0.3, 0.3, 0.3, 0.3],
+                margin:       format === 'A4' ? [0.3, 0.3, 0.3, 0.3] : [0.1, 0.1, 0.1, 0.1],
                 filename:     `Invoice_${(saleRecord.billNo || 'INV').replace('#', '')}_${(saleRecord.custName || 'Customer').replace(/\s+/g, '_')}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, logging: false },
-                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+                jsPDF:        format === 'A4' 
+                                ? { unit: 'in', format: 'a4', orientation: 'portrait' }
+                                : { unit: 'mm', format: [80, 200], orientation: 'portrait' }
             };
 
-            showToast('Generating PDF file...', 'info');
+            showToast(`Generating ${format} PDF...`, 'info');
 
             html2pdf().set(opt).from(element).save().then(() => {
                 element.classList.add('hidden');
@@ -1473,16 +1617,40 @@
             showToast('Sales report downloaded as CSV', 'success');
         }
 
-        function clearSalesHistory() {
-            if (salesHistory.length === 0) return;
-            if (window.confirm("Are you sure you want to clear all sales history? This action cannot be undone.")) {
-                salesHistory = [];
-                localStorage.removeItem('kirana_sales');
-                renderSalesHistory();
-                showToast('Sales history cleared', 'info');
-            }
+        function showConfirmModal(title, msg, onConfirm) {
+            document.getElementById('confirmModalTitle').innerText = title;
+            document.getElementById('confirmModalMsg').innerText = msg;
+            pendingConfirmAction = onConfirm;
+
+            const btn = document.getElementById('confirmModalActionBtn');
+            btn.onclick = () => {
+                closeConfirmModal(true);
+            };
+
+            document.getElementById('confirmModal').classList.remove('hidden');
         }
 
+        function closeConfirmModal(confirmed) {
+            document.getElementById('confirmModal').classList.add('hidden');
+            if (confirmed && typeof pendingConfirmAction === 'function') {
+                pendingConfirmAction();
+            }
+            pendingConfirmAction = null;
+        }
+
+        function clearSalesHistory() {
+            if (salesHistory.length === 0) return;
+            showConfirmModal(
+                "Clear Sales History?", 
+                "Are you sure you want to delete all sales records? This cannot be undone.",
+                () => {
+                    salesHistory = [];
+                    localStorage.removeItem('kirana_sales');
+                    renderSalesHistory();
+                    showToast('Sales history cleared', 'info');
+                }
+            );
+        }
 
         /* --- Tab Switcher Logic --- */
         function switchTab(tabName) {
